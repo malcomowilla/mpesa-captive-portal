@@ -11,8 +11,14 @@ def initiate_stk_push
 
     lipa_na_mpesa_online_passkey =  ENV['PASS_KEY'];
     
-    phone_number = ''
-    formatted_phone_number = phone_number.slice(1..-1) 
+    phone_number = phone_number = params[:phone_number] 
+    formatted_phone_number = "254#{phone_number.gsub(/\A0/, '')}"
+
+    permitted_params = params.permit(:amount, :phone_number) 
+    amount = permitted_params[:amount] || '30'
+
+    Rails.logger.info("Received parameters: #{params}")
+
 
 
 
@@ -21,7 +27,7 @@ def initiate_stk_push
    
 
    if token
-    response = initiate_payment(api_url, token, shortcode, lipa_na_mpesa_online_passkey, callback_url)
+    response = initiate_payment(api_url, token, shortcode, lipa_na_mpesa_online_passkey, callback_url, formatted_phone_number, amount)
     render json: response
   else
     render json: { error: 'Failed to fetch access token' }, status: :unprocessable_entity
@@ -48,7 +54,7 @@ access_token
 
 
 
-  def initiate_payment(api_url, token, shortcode, lipa_na_mpesa_online_passkey, callback_url)
+  def initiate_payment(api_url, token, shortcode, lipa_na_mpesa_online_passkey, callback_url, formatted_phone_number, amount)
     timestamp = Time.now.strftime('%Y%m%d%H%M%S')
 
     password = Base64.strict_encode64("#{shortcode}#{lipa_na_mpesa_online_passkey}#{timestamp}")
@@ -62,10 +68,10 @@ access_token
     Password:  password,    
     Timestamp:timestamp,    
     TransactionType: "CustomerPayBillOnline",    
-    Amount: "30",    
-    PartyA: "254791568852",    
+    Amount: amount,    
+    PartyA: formatted_phone_number,    
     PartyB:shortcode ,    
-    PhoneNumber:"254791568852",     
+    PhoneNumber:formatted_phone_number,     
     CallBackURL: callback_url,    
     AccountReference:"Mpesa Test",    
     TransactionDesc:"Testing  stk push"
